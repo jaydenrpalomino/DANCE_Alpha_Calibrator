@@ -1,48 +1,5 @@
-# alpha calibrator run files
-RootOutput/Calibrations_Run_*.root
-ParamOutput/param_out*.txt
-DANCE_Alpha_Database/DANCE_Alpha_*.root
-!DANCE_Alpha_Database/DANCE_Alpha_20??.root
-!DANCE_Alpha_Database/DANCE_Alpha_Database_104746_104750.root
-!DANCE_Alpha_Database/DANCE_Alpha_Database_113391_113393.root
-!DANCE_Alpha_Database/DANCE_Alpha_Database_117780_117780.root
-DANCE_Alpha_Database_FARE/DANCE_Alpha_*.root
-rootlogon.C
-
-# editor backups
-.*.swp
-*~
-*.bak
-
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+*.root
+ParamOutput/*
+RootOutput/*
+!ParamOutput/.gitkeep
+!RootOutput/.gitkeep
