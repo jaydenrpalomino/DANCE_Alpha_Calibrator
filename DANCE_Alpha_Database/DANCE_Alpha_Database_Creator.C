@@ -30,16 +30,16 @@ const int nruns = 1;
 
 //Int_t run_numbers[nruns] = {67323,67324,67325};  
 //Int_t run_numbers[nruns] = {104746, 104747, 104748, 104749, 104750};  
-Int_t run_numbers[nruns] = {119082};
-//Int_t run_numbers[nruns] = {100837,100838,100839,100840};  
+Int_t run_numbers[nruns] = {107980}; //{119082};
+//Int_t run_numbers[nruns] = {100837,100838,100839,100840}; 
 
 //Path to the root files
-string pathtorootfile = "/home/cfry/DANCE_Analysis/stage1_root/";
+string pathtorootfile = "/home/jr2514/DANCE/DANCE_Analysis/stage1_root/"; 
 
 //Prefix of File Name
 string histofilenameprefix = "Stage1_Histograms_Run_";
 
-string histofilenamesuffix = "_5ns_CW_0ns_CBT_0ns_DEBT.root";
+string histofilenamesuffix = "_10ns_CW_0ns_CBT_0ns_DEBT.root"; // What is 5ns?
 
 //End User Input.........................................//
 
@@ -52,8 +52,8 @@ void DANCE_Alpha_Database_Creator() {
   //Gamma Matrix is also stored in a 2D Histogram to see how good the calibration is
   TH2D *hDanceGammaDatabase;
 
-  char* alphahistname="ESlow_ID_alphaNoPU";
-  char* gammahistname="ESlow_ID_gammaNoPU";
+  char* alphahistname="ESlow_ID_alpha"; // change name? ESlow_ID_alpha
+  char* gammahistname="ESlow_ID_gammaNoPU"; 
 
   //Loop over the nruns
   for(int i=0; i<nruns; i++) {

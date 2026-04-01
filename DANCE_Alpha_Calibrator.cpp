@@ -68,7 +68,7 @@
 //par[2] is the scaling factor of the template
 Double_t ftotal(Double_t *x, Double_t *par) {
   Double_t xx = x[0]*par[0]+par[1];
-  Double_t value = par[2]*hTemp->Interpolate(xx);
+  Double_t value = par[2]*hTemp->Interpolate(xx); //interpolates between bins. par[2] is scaling factor to scale heights
   return value;
 }
 
@@ -78,16 +78,19 @@ int main(int argc, char *argv[]) {
   //User Input.............................................//
 
   //Path to the parm_out_RUNNUMBER files
-  string pathtofile = "/home/cfry/FARE/FARE_v10_ajc/Calibrations/";  //CURRENTLY NOT USED! THIS WOULD OVERWRITE CALIBRATIONS IN FARE
+  //string pathtofile = "/home/jr2514/DANCE/DANCE_Alpha_Calibrator/ParamOutput/";
+  string pathtofile = "/home/jr2514/DANCE/DANCE_Alpha_Calibrator/ParamOutput/";
 
   //Prefix of Param File Name
-  string filenameprefix = "/home/cfry/DANCE_Alpha_Calibrator/ParamOutput/param_out_";   
+  //string filenameprefix = "/home/jr2514/DANCE/DANCE_Alpha_Calibrator/ParamOutput/param_out_";
+  string filenameprefix = "/home/jr2514/DANCE/DANCE_Alpha_Calibrator/ParamOutput/param_out_";   
 
   //Suffix of Param File Name
   string filenamesuffix = ".txt"; 
 
   //Path to the root files
-  string pathtorootfile = "/home/cfry/DANCE_Analysis/stage0_root_automated/";
+  //string pathtorootfile = "/data2/lansce/jr2514/stage0_root/";
+  string pathtorootfile = "/home/jr2514/DANCE/DANCE_Analysis/stage0_root/";
   
   //Prefix of File Name
   string histofilenameprefix = "Stage0_Histograms_Run_";   
@@ -101,18 +104,19 @@ int main(int argc, char *argv[]) {
   //Prefix of Raw uncalibrated Alpha Histogram Name
   string alphahistonameprefix = "hAlpha";
 
-  string pathtorootoutput = "/home/cfry/DANCE_Alpha_Calibrator/RootOutput/";
+  //string pathtorootoutput = "/home/jr2514/DANCE/DANCE_Alpha_Calibrator/RootOutput/";
+  string pathtorootoutput = "/home/jr2514/DANCE/DANCE_Alpha_Calibrator/RootOutput/";
     
   //Path to the "DANCE_Alpha_Database.root" file
   string pathtodatabase="./DANCE_Alpha_Database/";
 
   //Warn the user if the chisquare/NDF goes above this value
-  Double_t chisquarewarning = 15; //3.5
+  Double_t chisquarewarning = 35; //3.5
 
   //Number of refit attempts allowed per detector if the chisquare is above chisquarewarning
   int refitattemptlimit=5; 
 
-  int rebin_factor = 4;
+  int rebin_factor = 4; 
 
   //End User Input.........................................//
 
@@ -131,17 +135,35 @@ int main(int argc, char *argv[]) {
 
   //Read in the starting parameters
   
+
+
+
   ifstream start;
-  start.open("last_params.dat"); 
-  
+  start.open("last_params.dat");
+  ////Read values from quadratic_terms.txt
+    std::ifstream termsFile("quadratic_terms.txt");
+    if (!termsFile.is_open()) {
+        std::cerr << "Error: Could not open quadratic_terms.txt." << std::endl;
+        return 1;
+    }
+
+    std::vector<double> starting_quad;
+    double value;
+    while (termsFile >> value) {
+        starting_quad.push_back(value);
+    }
+  //// this part is to update last_params.dat 
   double junkvalue=0;
   for(int i=0; i<162; i++) {
-    start>>junkvalue>>starting_offset[i]>>starting_slope[i]>>starting_quad[i]>>junkvalue>>junkvalue;
-    starting_offset[i] /= 1000.0;
+    //start>>junkvalue>>starting_offset[i]>>starting_slope[i]>>starting_quad[i]>>junkvalue>>junkvalue;
+    start>>junkvalue>>starting_offset[i]>>starting_slope[i]>>junkvalue>>junkvalue>>junkvalue;
+    starting_offset[i] /= 1000.0;    //keV to MeV
     starting_slope[i] /= 1000.0;
       //  cout<<i<<" offset: "<<starting_offset[i]<<"  slope: "<<starting_slope[i]<<endl;
   }
-  
+  for (int i = 0; i < 162; ++i) {
+    std::cout << "starting_quad[" << i << "] = " << starting_quad[i] << std::endl;
+    }
   bool failedfit=false;
   bool usingsubruns=false;
   int subrunnum=0;
@@ -154,8 +176,11 @@ int main(int argc, char *argv[]) {
   fname<<rnums[0];
   fname<<"_0";
   fname<<histofilenamesuffix.c_str();
-  char* alphahistname="ISlow_ID_alphaNoPU";
-  TFile* fin;// = new TFile (fname.str().c_str());
+  //char* alphahistname="ISlow_ID_alphaNoPU";
+  //inputting for _wf analysis for 2018 60Co which had little to no counts in NoPU
+  char *alphahistname="ISlow_ID_alpha";
+  TFile* fin;
+  // = new TFile (fname.str().c_str());
 
   if (!gSystem->AccessPathName(fname.str().c_str())) {
     usingsubruns=true;
@@ -291,7 +316,7 @@ int main(int argc, char *argv[]) {
       //Autodetermine the fit range
       int maxheight = hDet[j]->GetBinContent(hDet[j]->GetMaximumBin());
 
-      int fit_threshold = 0.1*maxheight;
+      int fit_threshold = 0.35*maxheight; // 0.35 normal, how high does fit start 0.20 for 114289, 114280 0.30 for 114271 and 114272
       int lower_limit=0;
       int upper_limit=0;
     
@@ -325,8 +350,8 @@ int main(int argc, char *argv[]) {
 
       ftot[j]->SetParLimits(1,-0.1,0.1);
       //cout << j << "\t" << starting_slope[j] << "\t" << 1.0*hProj[j]->GetMean()/(1.0*hDet[j]->GetMean()) << endl;
-      ftot[j]->SetParLimits(0,0.00030,0.00042);//this one is for 2019 onward 
-      //ftot[j]->SetParLimits(0,0.00021,0.00035); //comment the line above and go back here for 2018 data
+      //ftot[j]->SetParLimits(0,0.00030,0.00042);//this one is for 2019 onward 
+      ftot[j]->SetParLimits(0,0.00021,0.00035); //comment the line above and go back here for 2018 data
 
       //ftot[j]->SetParameter(2,hProj[j]->Integral()/hDet[j]->Integral());
       //   ftot[j]->FixParameter(2,hProj[j]->Integral()/hDet[j]->Integral());
@@ -359,6 +384,7 @@ int main(int argc, char *argv[]) {
 	    if (k==(refitattemptlimit-1)) {
 	      failedfits.push_back(j);
 	      failedfit=true;
+        
 	    }
 	  }
 	}
@@ -369,8 +395,10 @@ int main(int argc, char *argv[]) {
       hChiSquare_NDF->Fill(j,(ftot[j]->GetChisquare()/(1.*ftot[j]->GetNDF())));
 			   
       //Output fit results 
-      //    cout<<"Detector: "<<j<<"  "<<ftot[j]->GetChisquare()/(1.*ftot[j]->GetNDF())<<"   Slope: "<<1000*ftot[j]->GetParameter(0)<<"   Offset: "<<1000*ftot[j]->GetParameter(1)<<endl;
-    
+          cout<<"Detector: "<<j<<"   Chi Square: "<<ftot[j]->GetChisquare()/(1.*ftot[j]->GetNDF())<< endl;
+          //cout<<"Detector: "<<j<<"   Chi Square: "<<ftot[j]->GetChisquare()/(1.*ftot[j]->GetNDF())<<"   Limit: " << chisquarewarning <<endl;
+
+      
       //Store results in output rootfiles
       for(int k=0; k<(int)rnums.size(); k++) {
 	fout[k]->cd();
@@ -466,20 +494,25 @@ int main(int argc, char *argv[]) {
       ofstream ofs;
       ofs.open ("Calibration_Log.txt", std::ofstream::out | std::ofstream::app);
       
-      //output the results
+      //output the results 
       for(int j=0; j<numberofdetectors; j++) {
 	if(j==76 || j== 86) {
 	  calibout<<j<<"  "<<0<<"  "<<0<<"  "<<0<<"  "<<0<<"  "<<0<<"\n";  //Missing detectors
 	  lastout<<j<<"  "<<0<<"  "<<0<<"  "<<0<<"  "<<0<<"  "<<0<<"\n";  //Missing detectors
 	  
 	}
+  // This is what goes into param_out_
 	else { 
 	  //	  calibout<<j<<"  "<<1000.0*Offset[j]<<"  "<<1000.0*Slope[j]<<"  "<<0<<"  "<<0<<"  "<<12000.0*Slope[j]<<"\n";  //DANCE detectors
 	  //The short PSD gate was shortened before this block of runs
 	  if(rnums[i] > 100639) {
 	    calibout<<j<<"  "<<1000.0*Offset[j]<<"  "<<1000.0*Slope[j]<<"  "<< starting_quad[j] <<"  "<<0<<"  "<<6000.0*Slope[j]<<"\n";  //DANCE detectors
+      //calibout<<j<<"  "<<1000.0*Offset[j]<<"  "<<1000.0*Slope[j]<<"  "<< 0 <<"  "<<0<<"  "<<6000.0*Slope[j]<<"\n";  //DANCE detectors
 	    lastout<<j<<"  "<<1000.0*Offset[j]<<"  "<<1000.0*Slope[j]<<"  "<<0<<"  "<<0<<"  "<<6000.0*Slope[j]<<"\n";  //DANCE detectors
 	  }
+
+// 1000 * Offset ==> MeV to keV ==> output is in keV?
+
 	  //Consistent PSD gate for all of CAEN 2015 and 2018 that I know (or care) about
 	  else {
 	    calibout<<j<<"  "<<1000.0*Offset[j]<<"  "<<1000.0*Slope[j]<<"  "<<0<<"  "<<0<<"  "<<3500.0*Slope[j]<<"\n";  //DANCE detectors
@@ -496,6 +529,11 @@ int main(int argc, char *argv[]) {
       
       
       cout<<"There were "<<failedfits.size()<<" failed fits"<<endl;
+      for(int m = 0; m<failedfits.size();m++){
+
+        cout<<"Detector # "<<failedfits[m]<<" failed"<<endl;
+        
+      }
       
       ofs<<"Run: "<<rnums[i]<<"  "<<failedfits.size()<<" Failed Fits";
       if(failedfits.size()>0) {
